@@ -5,6 +5,7 @@
 #include <Psapi.h>
 #include <stdexcept>
 #include <array>
+#include <sstream>
 
 extern "C"
 {
@@ -98,6 +99,14 @@ void draw_pushbox(AHud *hud, const asw_entity *entity)
 		hud->Canvas->K2_DrawLine(corners[i], corners[(i + 1) % 4], 2.F, FLinearColor(1.F, 1.F, 0.F, 1.F));
 }
 
+UFont *get_font()
+{
+	static sigscan sig("RED-Win64-Shipping.exe");
+	static auto ref = sig.sig("\x48\x8B\xC3\xF3\x0F\x5E\xC8", "xxxxxxx") - 0x95;
+	static auto font = (UFont**)(ref + 4 + *(int*)(ref));
+	return *font;
+}
+
 extern "C" void draw_overlay(AHud *hud)
 {
 	if (hud->Canvas == nullptr)
@@ -106,6 +115,56 @@ extern "C" void draw_overlay(AHud *hud)
 	const auto *engine = asw_engine::get();
 	if (engine == nullptr)
 		return;
+
+	if (engine->entity_count() >= 2)
+	{
+		const auto p1 = engine->entity_list()[0];
+		const auto p2 = engine->entity_list()[1];
+
+		const auto p1_recovery = p1->recovery_frames() + max(0, p1->hitstop() - 1);
+		const auto p2_recovery = p2->recovery_frames() + max(0, p2->hitstop() - 1);
+
+		if (p1_recovery != -1 && p2_recovery != -1)
+		{
+			const auto advantage = p2_recovery - p1_recovery;
+			std::wstringstream ss;
+			if (advantage > 0)
+				ss << "+";
+
+			ss << advantage;
+
+			hud->Canvas->K2_DrawText(
+				get_font(),
+				ss.str(),
+				FVector2D(960.F, 200.F),
+				FLinearColor(1.F, 1.F, 1.F, 1.F),
+				0.F,
+				FLinearColor(0.F, 0.F, 0.F, 0.F),
+				FVector2D(0.F, 0.F),
+				true,
+				false,
+				true,
+				FLinearColor(0.F, 0.F, 0.F, 1.F));
+		}
+
+		std::wstringstream ss;
+		ss << "Damage Scaling: " << p2->damage_scaling() << "%" << std::endl;
+		ss << "Hitstun Penalty: " << p2->hitstun_penalty() << std::endl;
+		ss << "Untechable Penalty: " << p2->untechable_penalty() << std::endl;
+
+		hud->Canvas->K2_DrawText(
+			get_font(),
+			ss.str(),
+			FVector2D(150.F, 200.F),
+			FLinearColor(1.F, 1.F, 1.F, 1.F),
+			0.F,
+			FLinearColor(0.F, 0.F, 0.F, 0.F),
+			FVector2D(0.F, 0.F),
+			false,
+			false,
+			true,
+			FLinearColor(0.F, 0.F, 0.F, 1.F));
+	}
 
 	for (auto entidx = 0; entidx < engine->entity_count(); entidx++)
 	{

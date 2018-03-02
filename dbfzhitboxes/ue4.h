@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cmath>
+#include <string>
 
 struct FVector2D
 {
@@ -33,11 +34,37 @@ struct FLinearColor
 	FLinearColor(float R, float G, float B, float A) : R(R), G(G), B(B), A(A) {}
 };
 
+struct FString
+{
+	FString(const std::wstring &s)
+	{
+		Count = Max = (int)(s.length() + 1);
+		Data = s.data();
+	}
+
+	const wchar_t *Data;
+	int Count, Max;
+};
+
+class UFont;
+
 class UCanvas
 {
 public:
 	void K2_DrawLine(FVector2D ScreenPositionA, FVector2D ScreenPositionB, float Thickness, const FLinearColor &RenderColor);
 	FVector K2_Project(const FVector &WorldPosition);
+	void K2_DrawText(
+		UFont *RenderFont,
+		const FString &RenderText,
+		FVector2D ScreenPosition,
+		const FLinearColor &RenderColor,
+		float Kerning,
+		const FLinearColor &ShadowColor,
+		FVector2D ShadowOffset,
+		bool bCentreX,
+		bool bCentreY,
+		bool bOutlined,
+		const FLinearColor &OutlineColor);
 };
 
 class AHud
